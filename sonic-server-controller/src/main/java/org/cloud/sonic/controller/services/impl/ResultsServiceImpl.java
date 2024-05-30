@@ -22,11 +22,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.cloud.sonic.controller.mapper.ResultsMapper;
-import org.cloud.sonic.controller.models.domain.Projects;
-import org.cloud.sonic.controller.models.domain.ResultDetail;
-import org.cloud.sonic.controller.models.domain.Results;
-import org.cloud.sonic.controller.models.domain.TestCases;
+import org.cloud.sonic.controller.models.domain.*;
+import org.cloud.sonic.controller.models.dto.TestCasesDTO;
 import org.cloud.sonic.controller.models.dto.TestSuitesDTO;
+import org.cloud.sonic.controller.models.enums.AppInfo;
+import org.cloud.sonic.controller.models.enums.PerformanceKeyType;
+import org.cloud.sonic.controller.models.enums.StepKeyType;
 import org.cloud.sonic.controller.models.interfaces.ResultDetailStatus;
 import org.cloud.sonic.controller.models.interfaces.ResultStatus;
 import org.cloud.sonic.controller.services.*;
@@ -37,10 +38,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+
 
 /**
  * @author ZhouYiXun
@@ -65,6 +70,9 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
     private TestSuitesService testSuitesService;
     @Autowired
     private TestCasesService testCasesService;
+    @Autowired
+    private ResultPerformanceService resultPerformanceService;
+
 
     @Override
     public Page<Results> findByProjectId(int projectId, Page<Results> pageable) {
@@ -304,6 +312,8 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
     @Transactional(rollbackFor = Exception.class)
     public void setStatus(Results results) {
         List<ResultDetail> resultDetailList = resultDetailService.findAll(results.getId(), 0, "status", 0);
+        TestSuitesDTO suite =  testSuitesService.findById(results.getSuiteId());
+        Integer isOpenPerfmon = suite.getIsOpenPerfmon();
         int failCount = 0;
         int sucCount = 0;
         int warnCount = 0;
@@ -333,8 +343,98 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
             if (Objects.equals(results.getReceiveMsgCount(), results.getSendMsgCount())) {
                 results.setEndTime(new Date());
                 save(results);
+                // 检查是否开启性能测试
+                if (isOpenPerfmon == 1) {
+                    List<ResultDetail> resultDetailListAll = resultDetailService.findAll(results.getId(), 0, "", 0);
+                    Map<Integer, List<ResultDetail>> resultDetailListGroupByCaseId = resultDetailListAll.stream().collect(Collectors.groupingBy(ResultDetail::getCaseId));
+
+                    Map<Integer, Map<String, DoubleSummaryStatistics>> statsForCases = new HashMap<>();
+                    Map<Integer, Map<String, String>> appInfoMap = new HashMap<>();
+
+                    for (Map.Entry<Integer, List<ResultDetail>> entry : resultDetailListGroupByCaseId.entrySet()) {
+                        int caseId = entry.getKey();
+                        Map<String, DoubleSummaryStatistics> caseStats = new HashMap<>();
+                        statsForCases.putIfAbsent(caseId, caseStats);
+
+                        for (ResultDetail resultDetail : entry.getValue()) {
+                            if (resultDetail.getType().contains(StepKeyType.PERFORMANCE.getKey())) {
+                                JSONObject logObject = JSONObject.parseObject(resultDetail.getLog());
+                                if (logObject.containsKey(PerformanceKeyType.PROCESS.getKey())) {
+                                    JSONObject processObject = logObject.getJSONObject(PerformanceKeyType.PROCESS.getKey());
+                                    // FPS 计算
+                                    if (processObject.containsKey(PerformanceKeyType.FPS_INFO.getKey())) {
+                                        double fps = processObject.getJSONObject(PerformanceKeyType.FPS_INFO.getKey()).getDouble(PerformanceKeyType.FPS.getKey());
+                                        caseStats.computeIfAbsent(PerformanceKeyType.FPS.getKey(), k -> new DoubleSummaryStatistics()).accept(fps);
+                                    }
+                                    // CPU 计算
+                                    if (processObject.containsKey(PerformanceKeyType.CPU_INFO.getKey())) {
+                                        double cpuUtilization = processObject.getJSONObject(PerformanceKeyType.CPU_INFO.getKey()).getDouble(PerformanceKeyType.CPU_UTILIZATION.getKey());
+                                        caseStats.computeIfAbsent(PerformanceKeyType.CPU_UTILIZATION.getKey(), k -> new DoubleSummaryStatistics()).accept(cpuUtilization);
+                                    }
+                                    // Memory 计算
+                                    if (processObject.containsKey(PerformanceKeyType.MEMORY_INFO.getKey())) {
+                                        caseStats.computeIfAbsent(PerformanceKeyType.PHY_RSS.getKey(), k -> new DoubleSummaryStatistics()).accept(processObject.getJSONObject(PerformanceKeyType.MEMORY_INFO.getKey()).getDouble(PerformanceKeyType.PHY_RSS.getKey()));
+                                        caseStats.computeIfAbsent(PerformanceKeyType.VM_RSS.getKey(), k -> new DoubleSummaryStatistics()).accept(processObject.getJSONObject(PerformanceKeyType.MEMORY_INFO.getKey()).getDouble(PerformanceKeyType.VM_RSS.getKey()));
+                                        caseStats.computeIfAbsent(PerformanceKeyType.TOTAL_PSS.getKey(), k -> new DoubleSummaryStatistics()).accept(processObject.getJSONObject(PerformanceKeyType.MEMORY_INFO.getKey()).getDouble(PerformanceKeyType.TOTAL_PSS.getKey()));
+                                    }
+                                }
+                            }
+                            if (resultDetail.getType().contains(StepKeyType.STEP.getKey())){
+                                Map<String, String> appInfo =  new HashMap<>();
+                                if(resultDetail.getDes().contains(AppInfo.OPEN_APP.getKey())){
+                                    JSONObject logObject = JSONObject.parseObject(resultDetail.getLog());
+                                    if (logObject != null){
+                                        if (logObject.containsKey(AppInfo.APP_PACKAGE.getKey())){
+                                            appInfo.putIfAbsent(AppInfo.APP_PACKAGE.getKey(),
+                                                    logObject.getString(AppInfo.APP_PACKAGE.getKey()).isEmpty() ? "pro.bingbon.app" : logObject.getString(AppInfo.APP_PACKAGE.getKey()));
+                                        }
+                                        if (logObject.containsKey(AppInfo.APP_Version.getKey())){
+                                            appInfo.putIfAbsent(AppInfo.APP_Version.getKey(),
+                                                    logObject.getString(AppInfo.APP_Version.getKey()).isEmpty() ? "4.11" : logObject.getString(AppInfo.APP_Version.getKey()));
+                                        }
+                                        if (logObject.containsKey(AppInfo.UDID.getKey())){
+                                            appInfo.putIfAbsent(AppInfo.UDID.getKey(),
+                                                    logObject.getString(AppInfo.UDID.getKey()).isEmpty() ? "x" : logObject.getString(AppInfo.UDID.getKey()));
+                                        }
+                                        if (logObject.containsKey(AppInfo.PLATFORM.getKey())){
+                                            appInfo.putIfAbsent(AppInfo.PLATFORM.getKey(),
+                                                    logObject.getString(AppInfo.PLATFORM.getKey()).isEmpty() ? "1" : logObject.getString(AppInfo.PLATFORM.getKey()));
+                                        }
+                                        appInfoMap.putIfAbsent(caseId, appInfo);
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+
+                    for (Map.Entry<Integer, Map<String, DoubleSummaryStatistics>> entry : statsForCases.entrySet()) {
+                        int caseId = entry.getKey();
+                        TestCasesDTO cases = testCasesService.findById(caseId);
+                        Map<String, DoubleSummaryStatistics> caseStats = entry.getValue();
+                        DecimalFormat df = new DecimalFormat("#.##");
+                        Map<String, String> appInfo = appInfoMap.get(caseId);
+                        ResultPerformance resultPerformance = new ResultPerformance().
+                                setCaseId(caseId).
+                                setProjectId(suite.getProjectId()).
+                                setIsDeleted(0).
+                                setName(cases.getName()).
+                                setFps(Double.parseDouble(df.format(caseStats.getOrDefault(PerformanceKeyType.FPS.getKey(), new DoubleSummaryStatistics()).getAverage()))).
+                                setCpu(Double.parseDouble(df.format(caseStats.getOrDefault(PerformanceKeyType.CPU_UTILIZATION.getKey(), new DoubleSummaryStatistics()).getAverage()))).
+                                setVmRSS(Double.parseDouble(df.format(caseStats.getOrDefault(PerformanceKeyType.VM_RSS.getKey(), new DoubleSummaryStatistics()).getAverage()))).
+                                setPhyRSS(Double.parseDouble(df.format(caseStats.getOrDefault(PerformanceKeyType.PHY_RSS.getKey(), new DoubleSummaryStatistics()).getAverage()))).
+                                setTotalPSS(Double.parseDouble(df.format(caseStats.getOrDefault(PerformanceKeyType.TOTAL_PSS.getKey(), new DoubleSummaryStatistics()).getAverage()))).
+                                setAppVersion(appInfo.get(AppInfo.APP_Version.getKey())).
+                                setUdid(appInfo.get(AppInfo.UDID.getKey())).
+                                setPlatform(Integer.valueOf(appInfo.get(AppInfo.PLATFORM.getKey()))).
+                                setCreateTime(new Date()).
+                                setAppPackage(appInfo.get(AppInfo.APP_PACKAGE.getKey())).
+                                setResultId(results.getId());
+                        resultPerformanceService.save(resultPerformance);
+                    }
+                }
                 alertRobotsService.sendResultFinishReport(results.getSuiteId(),
-                        results.getSuiteName(), sucCount, warnCount, failCount, results.getProjectId(), results.getId());
+                results.getSuiteName(), sucCount, warnCount, failCount, results.getProjectId(), results.getId());
             }
         }
     }

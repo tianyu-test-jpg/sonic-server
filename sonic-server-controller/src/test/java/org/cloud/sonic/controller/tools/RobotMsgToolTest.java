@@ -57,7 +57,7 @@ public class RobotMsgToolTest {
 
     @Test
     public void testFeishu() {
-        String feishuToken = "https://open.feishu.cn/open-apis/bot/v2/hook/xxx";
+        String feishuToken = "https://open.feishu.cn/open-apis/bot/v2/hook/6964cb60-4af9-4575-be59-2e1cff6a7d3e";
         testMessage(new FeiShuImpl(), feishuToken, "");
     }
 

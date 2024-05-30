@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Performance Table</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search for caseId..">
+<table id="resultTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>App Version</th>
+        <th>App Package</th>
+        <!-- Add the rest of the keys as table headers -->
+    </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+</table>
+
+<script>
+    const jsonData = {
+        "code": 2000,
+        "message": "Search Successful!",
+        "data": [
+            {
+                "id": 31,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 196,
+                "fps": 0.0,
+                "phyRSS": 409303.0,
+                "vmRSS": 409303.0,
+                "totalPSS": 409303.0,
+                "cpu": 57.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T05:01:34.000+00:00"
+            },
+            {
+                "id": 32,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 197,
+                "fps": 0.0,
+                "phyRSS": 413533.0,
+                "vmRSS": 9619804.0,
+                "totalPSS": 0.0,
+                "cpu": 60.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T05:06:21.000+00:00"
+            },
+            {
+                "id": 33,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 197,
+                "fps": 0.0,
+                "phyRSS": 430852.0,
+                "vmRSS": 9652773.0,
+                "totalPSS": 0.0,
+                "cpu": 56.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T05:06:21.000+00:00"
+            },
+            {
+                "id": 34,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 210,
+                "fps": 30.0,
+                "phyRSS": 389962.0,
+                "vmRSS": 5420369.0,
+                "totalPSS": 0.0,
+                "cpu": 52.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T06:50:20.000+00:00"
+            },
+            {
+                "id": 35,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 210,
+                "fps": 9.0,
+                "phyRSS": 340566.0,
+                "vmRSS": 5538567.0,
+                "totalPSS": 0.0,
+                "cpu": 48.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T06:50:20.000+00:00"
+            },
+            {
+                "id": 36,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 211,
+                "fps": 28.0,
+                "phyRSS": 346513.0,
+                "vmRSS": 5432416.0,
+                "totalPSS": 0.0,
+                "cpu": 57.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:10:59.000+00:00"
+            },
+            {
+                "id": 37,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 211,
+                "fps": 19.0,
+                "phyRSS": 356742.0,
+                "vmRSS": 6240376.0,
+                "totalPSS": 0.0,
+                "cpu": 49.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:10:59.000+00:00"
+            },
+            {
+                "id": 38,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 215,
+                "fps": 34.0,
+                "phyRSS": 332694.0,
+                "vmRSS": 5419241.0,
+                "totalPSS": 0.0,
+                "cpu": 53.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:27:35.000+00:00"
+            },
+            {
+                "id": 39,
+                "appVersion": "4.17.0",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 215,
+                "fps": 30.0,
+                "phyRSS": 356166.0,
+                "vmRSS": 5839129.0,
+                "totalPSS": 0.0,
+                "cpu": 52.0,
+                "platform": 1,
+                "udid": "ucwsifdqeasss8pz",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:28:16.000+00:00"
+            },
+            {
+                "id": 40,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 217,
+                "fps": 52.0,
+                "phyRSS": 411134.0,
+                "vmRSS": 9817808.0,
+                "totalPSS": 0.0,
+                "cpu": 61.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:40:39.000+00:00"
+            },
+            {
+                "id": 41,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 217,
+                "fps": 44.0,
+                "phyRSS": 432661.0,
+                "vmRSS": 9809412.0,
+                "totalPSS": 0.0,
+                "cpu": 50.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T07:40:39.000+00:00"
+            },
+            {
+                "id": 42,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 222,
+                "fps": 53.0,
+                "phyRSS": 395264.0,
+                "vmRSS": 9418382.0,
+                "totalPSS": 0.0,
+                "cpu": 59.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:48:08.000+00:00"
+            },
+            {
+                "id": 43,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 222,
+                "fps": 54.0,
+                "phyRSS": 401133.0,
+                "vmRSS": 8919178.0,
+                "totalPSS": 0.0,
+                "cpu": 59.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:48:08.000+00:00"
+            },
+            {
+                "id": 44,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 223,
+                "fps": 46.0,
+                "phyRSS": 405275.0,
+                "vmRSS": 9493918.0,
+                "totalPSS": 0.0,
+                "cpu": 54.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:54:54.000+00:00"
+            },
+            {
+                "id": 45,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 223,
+                "fps": 40.0,
+                "phyRSS": 428824.0,
+                "vmRSS": 9735230.0,
+                "totalPSS": 0.0,
+                "cpu": 56.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:54:54.000+00:00"
+            },
+            {
+                "id": 46,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 12,
+                "resultId": 224,
+                "fps": 51.0,
+                "phyRSS": 398090.0,
+                "vmRSS": 9469180.0,
+                "totalPSS": 0.0,
+                "cpu": 62.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:57:35.000+00:00"
+            },
+            {
+                "id": 47,
+                "appVersion": "4.17.1",
+                "appPackage": "pro.bingbon.app",
+                "caseId": 14,
+                "resultId": 224,
+                "fps": 47.0,
+                "phyRSS": 432682.0,
+                "vmRSS": 9580721.0,
+                "totalPSS": 0.0,
+                "cpu": 56.0,
+                "platform": 1,
+                "udid": "R39M302BKYR",
+                "isDeleted": 0,
+                "createTime": "2024-05-24T09:57:35.000+00:00"
+            }
+        ]
+    };
+
+    function filterTable() {
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toUpperCase();
+        const tableBody = document.getElementById("tableBody");
+        const rows = tableBody.getElementsByTagName("tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            let shouldDisplay = false;
+            const cells = rows[i].getElementsByTagName("td")[1]; // Assuming caseId is in the second column
+            if (cells && cells.textContent.toUpperCase().indexOf(filter) > -1) {
+                shouldDisplay = true;
+            }
+            rows[i].style.display = shouldDisplay ? "" : "none";
+        }
+    }
+
+    jsonData.data.forEach(item => {
+        const row = document.createElement("tr");
+        Object.keys(item).forEach(key => {
+            const cell = document.createElement("td");
+            cell.textContent = item[key];
+            row.appendChild(cell);
+        });
+        document.getElementById("tableBody").appendChild(row);
+    });
+</script>
+</body>
+</html>

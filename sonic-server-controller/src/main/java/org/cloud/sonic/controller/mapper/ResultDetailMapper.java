@@ -44,4 +44,7 @@ public interface ResultDetailMapper extends BaseMapper<ResultDetail> {
     List<JSONObject> findTopDevices(@Param("startTime") String startTime,
                                     @Param("endTime") String endTime,
                                     @Param("projectId") int projectId);
+
+    @Select("SELECT * FROM sonic.result_detail WHERE result_id = #{resultId}")
+    List<ResultDetail> findByResultId(Integer resultId);
 }

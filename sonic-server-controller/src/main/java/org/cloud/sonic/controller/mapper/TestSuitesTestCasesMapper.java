@@ -17,8 +17,6 @@ import java.util.List;
  */
 @Mapper
 public interface TestSuitesTestCasesMapper extends BaseMapper<TestSuitesTestCases> {
-
     @Select("select ts.* from test_suites_test_cases tetc inner join test_suites ts on tetc.test_suites_id = ts.id where ts.id = #{testCasesId}")
     List<TestSuites> listTestSuitesByTestCasesId(@Param("testCasesId") int testCasesId);
-
 }

@@ -85,8 +85,11 @@ public class TransportServer {
     @OnMessage
     public void onMessage(String message, Session session) {
         JSONObject jsonMsg = JSON.parseObject(message);
+        log.info("获取到的message===={}",jsonMsg);
+
         if (jsonMsg.getString("msg").equals("ping")) {
             Session agentSession = BytesTool.agentSessionMap.get(jsonMsg.getInteger("agentId"));
+            log.info("获取到的agentSession===={}",agentSession);
             if (agentSession != null) {
                 JSONObject pong = new JSONObject();
                 pong.put("msg", "pong");
@@ -126,7 +129,10 @@ public class TransportServer {
             }
             break;
             case "subResultCount":
+                log.info("获取到的：对 resultsService.subResultCount发送请求，参数为===={}",jsonMsg.getInteger("rid"));
                 resultsService.subResultCount(jsonMsg.getInteger("rid"));
+                log.info("获取到的：对 resultsService.subResultCount发送请求，参数为===={}",jsonMsg.getInteger("rid"));
+
                 break;
             case "deviceDetail":
                 devicesService.deviceStatus(jsonMsg);
@@ -139,9 +145,14 @@ public class TransportServer {
                 break;
             case "findSteps":
                 JSONObject steps = findSteps(jsonMsg, "runStep");
+                System.out.println("收到的jsonMsg ===========》"+jsonMsg);
                 Session agentSession = BytesTool.agentSessionMap.get(jsonMsg.getInteger("agentId"));
+                System.out.println("收到的agentSession  ===========》"+agentSession);
+
                 if (agentSession != null) {
                     BytesTool.sendText(agentSession, steps.toJSONString());
+                    System.out.println("发送的要执行的  steps===========》"+steps.toJSONString());
+
                 }
                 break;
             case "errCall":
